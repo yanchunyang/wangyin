@@ -42,12 +42,16 @@ def StartSMPPClient():
     print "[StartSMPPClient...]"
      # Generate dictionary
     data = {}
-    data['command'] = "start"
+    data['forecasttime'] = "2013-04"
+    data['currenttime']="2013-03"
+    data['op']=['zhixiao','qudao']
+    data['field']=['16','32']
+    data['rrequest']='0'
     count=1    
     if options.number != None:
         count=int(options.number)
 
-    data['parameter'] = 'test parameter'
+    #data['parameter'] = 'test parameter'
     
     sock=connectToRemote(HOST,PORT)    
     ret=sendCommandToRemote(sock,data)

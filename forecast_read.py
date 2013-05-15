@@ -29,7 +29,7 @@ def getpos(date):
 
 def readline():
     n=0
-    filename=open("loss_charge_temp.txt")
+    filename=open("loss_charge.txt")
     t_userid=None
     t_consumelist=[0 for n in range(0,100)]
     t_clicklist=[0 for n in range(0,100)]
@@ -89,38 +89,105 @@ def readline():
     t_clicklist_wl)
 
     orgdata[t_userid]=detail_info
+
+def obtain_result(forecastdate, currentdate, op, field, rrequest): #rrequest is an option saving for future
+    loss_result={}    
+    for op_i in op:
+        for field_i in field:
+            dp=op_i+'_'+field_i            
+            loss_result[dp]=loss_rate(forecastdate, currentdate, op_i, field_i, rrequest)
+    return(loss_result)
   
     
-def loss_rate(orgdate, currentdate):
+def loss_rate(forecastdate, currentdate,op, field,rrequest):
     
-    stat_cus={}
-    
-    for key in orgdata.keys():
+    stat_cus=[]
+    ratio=[]
+    earliest_date='2010-01'
+    earliest_pos=getpos(earliest_date)
+    forecast_pos=getpos(forecastdate)
+    current_pos=getpos(currentdate)
+
+    length=current_pos-earliest_pos+2
+    ratio=[0 for n in range(0, length)]
+    stat_cus=[]  #obtain the left customer for each orgin
+    for i in range(0, length):
+        b=[0 for n in range(0, length)]
+        stat_cus.append(b)
+
+    for key in orgdata.keys(): # deal each customer
+        if (op=='all' or orgdata[key].orgidfirst==op) and (field=='all' or orgdata[key].utradeidfirst==field):
+            begin_pos=getpos(orgdata[key].firstconsumemonth)
+            if begin_pos<earliest_pos:
+                begin_pos=earliest_pos-1  #for customer before 2010, handle together
+            
+            posit=begin_pos-earliest_pos+1
+            stat_cus[posit][posit]+=1  #get the customer number at the beginning pos
+            temp_n=current_pos
+            while orgdata[key].pcconsume[temp_n]==0 and orgdata[key].wlconsume[temp_n]==0:
+                temp_n=temp_n-1
+            endit=temp_n-earliest_pos+1
+            stat_cus[posit][endit]+=1 #get the customer number at the ending pos
         
-        current_pos=getpos(currentdate)
-        forecast_pos=getpos(orgdate)
-        begin_pos=getpos(orgdata[key].firstconsumemonth)
-        if begin_pos not in stat_cus:
+    #pdb.set_trace()        
+    for i in range(0, len(stat_cus)):
+        for j in range(length-1,i+1,-1):
+            stat_cus[i][j-1]=stat_cus[i][j-1]+stat_cus[i][j] # obtain the real num of each period
+            
+    distance=forecast_pos-current_pos
+    for i in range(0, distance+1): # for very long-live customers
+        if stat_cus[0][current_pos-earliest_pos+1-distance]!=0:
+            ratio[i]=(float)(stat_cus[0][current_pos-earliest_pos+1])/stat_cus[0][current_pos-earliest_pos+1-distance]
+        else:
+            ratio[i]=0
         
-            time_length=current_pos-begin_pos
-            timelist=[0 for n in range(0,time_length+1)]
-        temp_n=current_pos
-        while orgdata[key].pcconsume[temp_n]==0 and orgdata[key].wlconsume[temp_n]==0:
-            temp_n=temp_n-1
-        stat_cus[begin_pos].timelist[temp_n-begin_pos]+=1
+    for i in range(distance+1, len(stat_cus)): # for the left customers
+
+        temp_ratio=0
+        temp_distance=current_pos-earliest_pos+1-i
+	temp_n=0
+        for j in range(1, i):
+            if stat_cus[j][j+temp_distance]!=0:
+		temp_n=temp_n+1
+                temp_ratio=temp_ratio+(float)(stat_cus[j][j+temp_distance+distance])/stat_cus[j][j+temp_distance]
+            else:
+                temp_ratio=0
+	if temp_n>0:
+        	ratio[i]=temp_ratio/(temp_n)
+	else:
+		ratio[i]=0
+
+    left_customer=0
+    customer_num=0
+    for i in range(0, length):
+	customer_num=customer_num+stat_cus[i][current_pos-earliest_pos+1]
+        left_customer+=stat_cus[i][current_pos-earliest_pos+1]*ratio[i]
+    #pdb.set_trace()
+    print(customer_num)
+    return(left_customer)
+    	
+        
+        
         
     
 
     
      
-            
-
+           
+'''
 if __name__=="__main__":
     readline()
+    print("hello done") 	
+    left_customer=obtain_result('2013-04','2013-03', ['zhixiao','qudao'],['16','32'],0)
+
+    for key in left_customer.keys():
+        print(key+'\t'+str(left_customer[key]))
+    
+   
  
     #pdb.set_trace()
     print('end')
-
+'''
     
     
                 

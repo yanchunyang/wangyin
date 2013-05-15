@@ -14,7 +14,6 @@ from sets import Set
 import datetime 
 import shutil
 import time
-sys.path.append("E:\\后百度时代\\Pythoncode\\")
 import forecast_read
 
 #Refer: http://docs.python.org/release/2.5.2/lib/optparse-standard-option-actions.html
@@ -40,12 +39,14 @@ def process_command(data,smppServer):
     print 'command=',data
     import json
     decoded = json.loads(data)
- 
+
+    #import pdb;pdb.set_trace()
+
+    ''' 
     command=decoded['command']    
     if command.lower().find("start") != -1:
         return forecast_read.sumbytime()
         #return 'got you'
-    '''    
     elif command.lower().find("stop") != -1:
         StopSMPPSimulatorClient()
         return "Stopped successfully"
@@ -53,7 +54,9 @@ def process_command(data,smppServer):
         return "Ping OK"
   
     else:
-        return  'Invalid command:'+command '''
+        return  'Invalid command:'+command 
+    '''
+    forecast_read.obtain_result(decoded['forecasttime'], decoded['currenttime'],decoded['op'],decoded['field'],decoded['rrequest'])
 
 class SingleTCPHandler(SocketServer.BaseRequestHandler):
     "One instance per connection.  Override handle(self) to customize action."
@@ -67,8 +70,8 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
         if reply is not None:
             self.request.send(str(reply))
 
-        print 'sleep for 20 seconds to demo multiple client handling..'
-        time.sleep(20)
+        #print 'sleep for 20 seconds to demo multiple client handling..'
+        #time.sleep(20)
         print 'Done'
 
         self.request.close()
